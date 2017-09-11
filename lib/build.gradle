@@ -7,9 +7,9 @@ android {
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        version = '0.3.0'
-        group = 'com.tbruyelle.rxpermissions'
+        versionCode 12
+        version = rootProject.ext.libraryVersion
+        group = rootProject.ext.publishedGroupId + rootProject.ext.artifact
     }
     buildTypes {
         release {
@@ -29,7 +29,14 @@ android {
 
 dependencies {
     compile rootProject.ext.rxJava
+    compile rootProject.ext.supportAnnotations
 
     testCompile rootProject.ext.junit
     testCompile rootProject.ext.mockito
+    testCompile rootProject.ext.robolectric
+    testCompile rootProject.ext.robolectricShadowsSupport
+    testCompile rootProject.ext.khronosOpenGLApi
 }
+
+apply from: 'install.gradle'
+apply from: 'bintray.gradle'

@@ -6,72 +6,88 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.SurfaceView;
-import android.view.View;
 import android.widget.Toast;
 
+import com.jakewharton.rxbinding.view.RxView;
+import com.tbruyelle.rxpermissions.Permission;
 import com.tbruyelle.rxpermissions.RxPermissions;
 
 import java.io.IOException;
 
+import rx.functions.Action0;
+import rx.functions.Action1;
+
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "RxPermissions";
+    private static final String TAG = "RxPermissionsSample";
 
-    private RxPermissions mRxPermissions;
-    private Camera mCamera;
-    private SurfaceView mSurfaceView;
+    private Camera camera;
+    private SurfaceView surfaceView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        mRxPermissions = RxPermissions.getInstance(this);
+        RxPermissions rxPermissions = new RxPermissions(this);
+        rxPermissions.setLogging(true);
 
         setContentView(R.layout.act_main);
-        mSurfaceView = (SurfaceView) findViewById(R.id.surfaceView);
-    }
+        surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
 
-    public void enableCamera(View v) {
-        mRxPermissions.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
-                .flatMap(should -> {
-                    if (should) {
-                        // User already denied the permission, but didn't
-                        // checked "never ask again".
-                        Toast.makeText(MainActivity.this,
-                                "Please please grant this permission !",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                    return mRxPermissions.request(Manifest.permission.CAMERA);
-                })
-                .subscribe(granted -> {
-                    if (granted) {
-                        releaseCamera();
-                        mCamera = Camera.open(0);
-                        try {
-                            mCamera.setPreviewDisplay(mSurfaceView.getHolder());
-                            mCamera.startPreview();
-                        } catch (IOException e) {
-                            Log.e(TAG, "Error while trying to display the camera preview", e);
-                        }
-                    } else {
-                        Toast.makeText(MainActivity.this,
-                                "Permission denied, can't enable the camera",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
+        RxView.clicks(findViewById(R.id.enableCamera))
+                // Ask for permissions when button is clicked
+                .compose(rxPermissions.ensureEach(Manifest.permission.CAMERA))
+                .subscribe(new Action1<Permission>() {
+                               @Override
+                               public void call(Permission permission) {
+                                   Log.i(TAG, "Permission result " + permission);
+                                   if (permission.granted) {
+                                       releaseCamera();
+                                       camera = Camera.open(0);
+                                       try {
+                                           camera.setPreviewDisplay(surfaceView.getHolder());
+                                           camera.startPreview();
+                                       } catch (IOException e) {
+                                           Log.e(TAG, "Error while trying to display the camera preview", e);
+                                       }
+                                   } else if (permission.shouldShowRequestPermissionRationale) {
+                                       // Denied permission without ask never again
+                                       Toast.makeText(MainActivity.this,
+                                               "Denied permission without ask never again",
+                                               Toast.LENGTH_SHORT).show();
+                                   } else {
+                                       // Denied permission with ask never again
+                                       // Need to go to the settings
+                                       Toast.makeText(MainActivity.this,
+                                               "Permission denied, can't enable the camera",
+                                               Toast.LENGTH_SHORT).show();
+                                   }
+                               }
+                           },
+                        new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable t) {
+                                Log.e(TAG, "onError", t);
+                            }
+                        },
+                        new Action0() {
+                            @Override
+                            public void call() {
+                                Log.i(TAG, "OnComplete");
+                            }
+                        });
     }
-
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onStop() {
+        super.onStop();
         releaseCamera();
     }
 
     private void releaseCamera() {
-        if (mCamera != null) {
-            mCamera.release();
-            mCamera = null;
+        if (camera != null) {
+            camera.release();
+            camera = null;
         }
     }
+
 }
