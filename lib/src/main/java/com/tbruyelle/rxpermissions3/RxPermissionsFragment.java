@@ -1,15 +1,20 @@
-package com.tbruyelle.rxpermissions2;
+package com.tbruyelle.rxpermissions3;
 
 import android.annotation.TargetApi;
-import android.app.Fragment;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.util.Log;
-import io.reactivex.subjects.PublishSubject;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+
 import java.util.HashMap;
 import java.util.Map;
+
+import io.reactivex.rxjava3.subjects.PublishSubject;
+
 
 public class RxPermissionsFragment extends Fragment {
 
@@ -35,7 +40,7 @@ public class RxPermissionsFragment extends Fragment {
     }
 
     @TargetApi(Build.VERSION_CODES.M)
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode != PERMISSIONS_REQUEST_CODE) return;
@@ -49,7 +54,7 @@ public class RxPermissionsFragment extends Fragment {
         onRequestPermissionsResult(permissions, grantResults, shouldShowRequestPermissionRationale);
     }
 
-    void onRequestPermissionsResult(String permissions[], int[] grantResults, boolean[] shouldShowRequestPermissionRationale) {
+    void onRequestPermissionsResult(String[] permissions, int[] grantResults, boolean[] shouldShowRequestPermissionRationale) {
         for (int i = 0, size = permissions.length; i < size; i++) {
             log("onRequestPermissionsResult  " + permissions[i]);
             // Find the corresponding subject
@@ -68,12 +73,20 @@ public class RxPermissionsFragment extends Fragment {
 
     @TargetApi(Build.VERSION_CODES.M)
     boolean isGranted(String permission) {
-        return getActivity().checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
+        final FragmentActivity fragmentActivity = getActivity();
+        if (fragmentActivity == null) {
+            throw new IllegalStateException("This fragment must be attached to an activity.");
+        }
+        return fragmentActivity.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
     }
 
     @TargetApi(Build.VERSION_CODES.M)
     boolean isRevoked(String permission) {
-        return getActivity().getPackageManager().isPermissionRevokedByPolicy(permission, getActivity().getPackageName());
+        final FragmentActivity fragmentActivity = getActivity();
+        if (fragmentActivity == null) {
+            throw new IllegalStateException("This fragment must be attached to an activity.");
+        }
+        return fragmentActivity.getPackageManager().isPermissionRevokedByPolicy(permission, getActivity().getPackageName());
     }
 
     public void setLogging(boolean logging) {
@@ -84,12 +97,8 @@ public class RxPermissionsFragment extends Fragment {
         return mSubjects.get(permission);
     }
 
-    public boolean containsByPermission(@NonNull String permission) {
-        return mSubjects.containsKey(permission);
-    }
-
-    public PublishSubject<Permission> setSubjectForPermission(@NonNull String permission, @NonNull PublishSubject<Permission> subject) {
-        return mSubjects.put(permission, subject);
+    public void setSubjectForPermission(@NonNull String permission, @NonNull PublishSubject<Permission> subject) {
+        mSubjects.put(permission, subject);
     }
 
     void log(String message) {

@@ -1,15 +1,16 @@
 apply plugin: 'com.android.library'
+apply from: 'jitpack.gradle'
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        version = rootProject.ext.libraryVersion
-        group = rootProject.ext.publishedGroupId + rootProject.ext.artifact
     }
     buildTypes {
         release {
@@ -17,7 +18,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
+    testOptions.unitTests.includeAndroidResources = true
     testOptions.unitTests.all {
         // unitTests.returnDefaultValues = true
         // Always show the result of every unit test, even if it passes.
@@ -28,15 +29,17 @@ android {
 }
 
 dependencies {
-    compile rootProject.ext.rxJava
-    compile rootProject.ext.supportAnnotations
+    implementation rootProject.ext.rxJava
+    implementation rootProject.ext.androidXFragment
+    implementation rootProject.ext.androidXAnnotation
+    implementation rootProject.ext.androidXAppcompat
 
-    testCompile rootProject.ext.junit
-    testCompile rootProject.ext.mockito
-    testCompile rootProject.ext.robolectric
-    testCompile rootProject.ext.robolectricShadowsSupport
-    testCompile rootProject.ext.khronosOpenGLApi
+    testImplementation 'junit:junit:4.13'
+    testImplementation rootProject.ext.mockito
+    testImplementation rootProject.ext.robolectric
+    testImplementation rootProject.ext.khronosOpenGLApi
 }
 
-apply from: 'install.gradle'
-apply from: 'bintray.gradle'
+// Commented to use JitPack instead of bintray
+//apply from: 'install.gradle'
+//apply from: 'bintray.gradle'
